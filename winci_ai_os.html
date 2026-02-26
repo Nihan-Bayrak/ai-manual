@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>WIN CI — AI Operating System</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--y:#FFD600;--p:#9B30FF;--bg:#09090B;--w:#EDEDE9;--m:#555;--d:#1a1a1a}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--w);font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}
+::selection{background:var(--y);color:var(--bg)}
+
+/* ══════ WRAPPER ══════ */
+#app{position:fixed;inset:0;overflow:hidden}
+
+/* ══════ PAGE ══════ */
+.pg{
+  position:absolute;inset:0;
+  display:flex;align-items:center;
+  padding:0 10vw;
+  background:var(--bg);
+  opacity:0;
+  pointer-events:none;
+  transform:rotateY(90deg) scale(0.8);
+  transition:transform 1s cubic-bezier(.77,0,.18,1), opacity 0.6s ease;
+  will-change:transform,opacity;
+  z-index:0;
+}
+.pg.active{
+  opacity:1;pointer-events:auto;
+  transform:rotateY(0deg) scale(1);
+  z-index:2;
+}
+.pg.exit-left{
+  opacity:0;pointer-events:none;
+  transform:rotateY(-180deg) scale(0.8);
+  z-index:1;
+}
+.pg.exit-right{
+  opacity:0;pointer-events:none;
+  transform:rotateY(180deg) scale(0.8);
+  z-index:1;
+}
+
+/* Perspective on parent */
+#app{perspective:1200px}
+
+/* ══════ FIXED UI ══════ */
+.ui-logo{
+  position:fixed;top:28px;left:40px;z-index:100;
+  font-size:13px;font-weight:800;letter-spacing:3px;text-transform:uppercase;
+  color:#fff;mix-blend-mode:difference;
+}
+.ui-logo b{color:var(--y)}
+.ui-counter{
+  position:fixed;top:28px;right:40px;z-index:100;
+  font-size:12px;font-weight:600;letter-spacing:2px;color:#666;
+  mix-blend-mode:difference;
+}
+.ui-counter b{color:#fff}
+.ui-lang{
+  position:fixed;top:28px;right:120px;z-index:100;
+  display:flex;gap:0;border:1px solid rgba(255,255,255,0.12);overflow:hidden;
+  mix-blend-mode:difference;
+}
+.ui-lang button{
+  background:transparent;border:none;color:#666;
+  font-family:inherit;font-size:10px;font-weight:700;letter-spacing:2px;
+  padding:5px 12px;cursor:pointer;transition:all 0.3s;text-transform:uppercase;
+}
+.ui-lang button.on{background:var(--y);color:var(--bg)}
+.ui-dots{
+  position:fixed;right:28px;top:50%;transform:translateY(-50%);z-index:100;
+  display:flex;flex-direction:column;gap:8px;
+  mix-blend-mode:difference;
+}
+.ui-dot{
+  width:8px;height:8px;border-radius:50%;cursor:pointer;
+  background:rgba(255,255,255,0.15);transition:all 0.4s;border:none;padding:0;
+}
+.ui-dot.on{background:var(--y);transform:scale(1.4)}
+.ui-dot:hover{background:rgba(255,255,255,0.4)}
+.ui-scroll{
+  position:fixed;bottom:28px;left:50%;transform:translateX(-50%);z-index:100;
+  font-size:9px;letter-spacing:4px;text-transform:uppercase;color:#444;
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+  mix-blend-mode:difference;transition:opacity 0.5s;
+}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(4px)}}
+.ui-scroll i{font-style:normal;animation:bob 1.5s ease infinite}
+
+/* ══════ INTRO OVERLAY ══════ */
+#intro{
+  position:fixed;inset:0;z-index:200;
+  background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;transition:opacity 0.8s ease 0.2s, visibility 0.8s;
+}
+#intro.gone{opacity:0;visibility:hidden;pointer-events:none}
+#intro .tag{font-size:10px;letter-spacing:5px;text-transform:uppercase;color:var(--y);font-weight:700;margin-bottom:20px}
+#intro h1{font-size:clamp(28px,5vw,52px);font-weight:800;letter-spacing:-0.03em;line-height:1.15;margin-bottom:12px}
+#intro h1 em{font-style:italic;color:var(--y)}
+#intro p{color:var(--m);font-size:14px;max-width:340px;line-height:1.7;margin-bottom:36px}
+#intro button{
+  background:var(--y);color:var(--bg);border:none;
+  padding:14px 52px;font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+  cursor:pointer;font-family:inherit;transition:all 0.3s;
+}
+#intro button:hover{transform:scale(1.06);box-shadow:0 0 60px rgba(255,214,0,0.25)}
+
+/* ══════ PAGE CONTENT ANIMATIONS ══════ */
+.pg .lbl,.pg .ttl,.pg .bdy,.pg .ext{
+  opacity:0;transform:translateY(30px);
+  transition:opacity 0.7s ease,transform 0.7s ease;
+}
+.pg.active .lbl{opacity:1;transform:translateY(0);transition-delay:0.35s}
+.pg.active .ttl{opacity:1;transform:translateY(0);transition-delay:0.5s}
+.pg.active .bdy{opacity:1;transform:translateY(0);transition-delay:0.65s}
+.pg.active .ext{opacity:1;transform:translateY(0);transition-delay:0.8s}
+
+/* ══════ TYPOGRAPHY ══════ */
+.lbl{font-size:10px;font-weight:700;letter-spacing:5px;text-transform:uppercase;color:var(--y);margin-bottom:20px}
+.ttl{font-size:clamp(38px,6.5vw,90px);font-weight:800;line-height:0.96;letter-spacing:-0.04em;margin-bottom:28px}
+.ttl em{font-style:italic;color:var(--y)}
+.ttl .pp{color:var(--p)}
+.bdy{font-size:clamp(14px,1.4vw,18px);color:var(--m);max-width:560px;line-height:1.75}
+.bdy strong{color:var(--w)}
+.ext{margin-top:40px}
+
+/* ══════ META ROW ══════ */
+.meta{display:flex;gap:40px;padding-top:24px;border-top:1px solid var(--d)}
+.meta-i{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--m)}
+.meta-i b{display:block;color:var(--w);font-size:13px;letter-spacing:0;text-transform:none;margin-top:4px;font-weight:600}
+
+/* ══════ MINI CARDS (FLIP) ══════ */
+.mcards{display:grid;grid-template-columns:repeat(4,1fr);gap:2px}
+.mc{perspective:600px;height:120px;cursor:pointer}
+.mc-inner{
+  position:relative;width:100%;height:100%;
+  transition:transform 0.6s cubic-bezier(.4,0,.2,1);
+  transform-style:preserve-3d;
+}
+.mc:hover .mc-inner{transform:rotateY(180deg)}
+.mc-front,.mc-back{
+  position:absolute;inset:0;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  padding:22px 18px;border:1px solid transparent;
+  display:flex;flex-direction:column;justify-content:center;
+}
+.mc-front{background:rgba(255,255,255,0.025)}
+.mc-back{
+  background:rgba(255,214,0,0.04);border-color:var(--y);
+  transform:rotateY(180deg);
+}
+.mc-front i{font-style:normal;font-size:20px;display:block;margin-bottom:10px}
+.mc-front h4{font-size:12px;font-weight:700;margin-bottom:0}
+.mc-back p{font-size:11px;color:var(--w);line-height:1.5}
+.mc-back h4{font-size:10px;font-weight:700;color:var(--y);margin-bottom:6px}
+
+/* ══════ MINI STEPS ══════ */
+.msteps{max-width:500px}
+.ms{display:flex;gap:16px;padding:14px 0;border-bottom:1px solid var(--d);align-items:flex-start}
+.ms:first-child{border-top:1px solid var(--d)}
+.ms-n{font-size:26px;font-weight:900;color:var(--y);line-height:1;min-width:32px}
+.ms-t h4{font-size:13px;font-weight:700;margin-bottom:2px}
+.ms-t p{font-size:11px;color:var(--m);line-height:1.5}
+
+/* ══════ PERM TABLE ══════ */
+.ptbl{max-width:520px;width:100%;border-collapse:collapse}
+.ptbl th{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--m);text-align:left;padding:8px 10px;border-bottom:1.5px solid var(--d)}
+.ptbl td{font-size:12px;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.025)}
+.ptbl .y{color:var(--y);font-weight:700}
+.ptbl .n{color:#2a2a2a}
+
+/* ══════ CODE BLOCK ══════ */
+.codeblock{
+  font-family:'DM Mono',monospace;font-size:15px;
+  color:var(--w);background:rgba(255,214,0,0.04);
+  padding:12px 20px;border:1px solid rgba(255,214,0,0.1);
+  border-radius:4px;display:inline-block;margin:12px 0;line-height:1.8;
+}
+.codeblock .vr{color:var(--p);font-weight:600}
+
+/* ══════ FINAL PAGE ══════ */
+.pg-final{align-items:center;justify-content:center;text-align:center;padding:0}
+.pg-final .ttl{
+  font-size:clamp(60px,12vw,160px);
+  background:linear-gradient(135deg,var(--y) 0%,var(--p) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;margin-bottom:0;
+}
+.pg-final .sub{
+  font-size:13px;color:var(--m);letter-spacing:4px;text-transform:uppercase;margin-top:20px;
+  opacity:0;transform:translateY(15px);transition:all 0.8s ease 1s;
+}
+.pg-final.active .sub{opacity:1;transform:translateY(0)}
+
+/* ══════ FLOATING GEOS ══════ */
+.g{position:absolute;pointer-events:none;opacity:0;transition:opacity 0.8s ease 0.6s}
+.pg.active .g{opacity:1}
+.gr{border:1.5px solid;border-radius:50%}
+.gc{font-weight:200;line-height:1}
+.gl{height:1.5px}
+
+/* ══════ RESPONSIVE ══════ */
+@media(max-width:768px){
+  .pg{padding:0 7vw}
+  .mcards{grid-template-columns:1fr 1fr}
+  .meta{flex-wrap:wrap;gap:20px}
+  .ui-dots{display:none}
+  .ui-logo{left:20px;top:20px}
+  .ui-counter{right:20px;top:20px}
+  .ui-lang{right:80px;top:20px}
+}
+@media(max-width:480px){
+  .mcards{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════ INTRO SCREEN ══════ -->
+<div id="intro">
+  <div class="tag" data-i18n="intro_tag">⚡ Experimental Interface</div>
+  <h1 data-i18n="intro_title">Welcome to<br/>WIN CI<em>AI<br/>Operating System.</em></h1>
+  <p data-i18n="intro_desc">This handbook uses 360° page transitions. Scroll or use arrow keys to navigate between sections.</p>
+  <button id="enterBtn" data-i18n="intro_btn">Initialize System</button>
+</div>
+
+<!-- ══════ FIXED UI ══════ -->
+<div class="ui-logo">WIN<b>.</b>CI<b>AI</b><b>HUB</b></div>
+<div class="ui-lang" id="langSw"><button class="on" data-lang="en">EN</button><button data-lang="de">DE</button></div>
+<div class="ui-counter" id="ctr"><b>1</b> / 10</div>
+<div class="ui-dots" id="dots"></div>
+<div class="ui-scroll" id="scrl"><i>↓</i><span data-i18n="scroll_hint">Scroll to navigate</span></div>
+
+<!-- ══════ APP ══════ -->
+<div id="app">
+
+<!-- 1 ── INTRODUCTION ── -->
+<div class="pg" id="p0">
+  <div class="g gr" style="width:380px;height:380px;top:8%;right:6%;border-color:rgba(155,48,255,0.07)"></div>
+  <div class="g gr" style="width:140px;height:140px;bottom:22%;right:28%;border-color:rgba(255,214,0,0.06)"></div>
+  <div class="g gc" style="top:18%;right:20%;color:rgba(255,214,0,0.07);font-size:80px">+</div>
+  <div>
+    <div class="lbl" data-i18n="p0_lbl">Introduction</div>
+    <div class="ttl" data-i18n="p0_ttl">AI at<br/><em>WIN CI.</em></div>
+    <div class="bdy" data-i18n="p0_bdy"><strong>Langdock</strong> is our official AI Hub. It helps you brainstorm faster, process information more efficiently, and focus more time on <strong>creative work.</strong> </div>
+    <div class="ext">
+      <div class="meta">
+        <div class="meta-i" data-i18n="p0_m1">Platform<b>Langdock Enterprise</b></div>
+        <div class="meta-i" data-i18n="p0_m2">Compliance<b>GDPR · EU-hosted</b></div>
+        <div class="meta-i" data-i18n="p0_m3">For<b>Every WIN CI Member</b></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 2 ── WHAT IS LANGDOCK + MODELS ── -->
+<div class="pg" id="p1">
+  <div class="g gl" style="width:280px;top:36%;right:0;background:rgba(255,214,0,0.04);transform:rotate(-25deg)"></div>
+  <div class="g gr" style="width:220px;height:220px;bottom:12%;left:-4%;border-color:rgba(155,48,255,0.05)"></div>
+  <div>
+    <div class="lbl" data-i18n="p1_lbl">01 — What is Langdock?</div>
+    <div class="ttl" data-i18n="p1_ttl">One workspace.<br/>Every <em>model.</em></div>
+    <div class="bdy" data-i18n="p1_bdy">A secure, GDPR-compliant AI platform giving you access to <strong>multiple LLMs</strong> in one place. Your data stays protected, hosted in Europe, and is <strong>never used for AI training.</strong> No personal accounts needed.</div>
+    <div class="ext">
+      <div class="mcards">
+        <div class="mc"><div class="mc-inner"><div class="mc-front"><i>🟢</i><h4>GPT-4o</h4></div><div class="mc-back"><h4>GPT-4o</h4><p data-i18n="p1_c1">Best all-rounder. Writing, brainstorming, translation.</p></div></div></div>
+        <div class="mc"><div class="mc-inner"><div class="mc-front"><i>🟣</i><h4>Claude 3.5 Sonnet</h4></div><div class="mc-back"><h4>Claude 3.5 Sonnet</h4><p data-i18n="p1_c2">Long-form, nuanced text & detailed analysis.</p></div></div></div>
+        <div class="mc"><div class="mc-inner"><div class="mc-front"><i>🔵</i><h4>Gemini 1.5 Pro</h4></div><div class="mc-back"><h4>Gemini 1.5 Pro</h4><p data-i18n="p1_c3">Data-heavy, multilingual & very long docs.</p></div></div></div>
+        <div class="mc"><div class="mc-inner"><div class="mc-front"><i>⚪</i><h4>GPT-4o mini</h4></div><div class="mc-back"><h4>GPT-4o mini</h4><p data-i18n="p1_c4">Quick simple questions. Faster & lighter.</p></div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 3 ── GETTING STARTED ── -->
+<div class="pg" id="p2">
+  <div class="g gc" style="bottom:28%;right:12%;color:rgba(155,48,255,0.06);font-size:60px">+</div>
+  <div class="g gr" style="width:300px;height:300px;top:-5%;right:-8%;border-color:rgba(255,214,0,0.04)"></div>
+  <div>
+    <div class="lbl" data-i18n="p2_lbl">02 — Getting Started</div>
+    <div class="ttl" data-i18n="p2_ttl">Up &amp; running<br/>in <em>60 seconds.</em></div>
+    <div class="bdy" data-i18n="p2_bdy">Click the link from Head of Digital, open a new chat, choose a model, and start prompting. <strong>That's it — you're in.</strong></div>
+    <div class="ext">
+      <div class="msteps">
+        <div class="ms"><div class="ms-n">01</div><div class="ms-t"><h4 data-i18n="p2_s1h">Access workspace</h4><p data-i18n="p2_s1p">Click the link in the email from Head of Digital.</p></div></div>
+        <div class="ms"><div class="ms-n">02</div><div class="ms-t"><h4 data-i18n="p2_s2h">Start a chat</h4><p data-i18n="p2_s2p">Click "New Chat" top-left. Type your prompt at the bottom.</p></div></div>
+        <div class="ms"><div class="ms-n">03</div><div class="ms-t"><h4 data-i18n="p2_s3h">Choose a model</h4><p data-i18n="p2_s3p">Pick from the dropdown. Start with GPT-4o if unsure.</p></div></div>
+        <div class="ms"><div class="ms-n">04</div><div class="ms-t"><h4 data-i18n="p2_s4h">Prompt &amp; go</h4><p data-i18n="p2_s4p">Type your first prompt and press Enter.</p></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 4 ── ART OF THE PROMPT ── -->
+<div class="pg" id="p3">
+  <div class="g gr" style="width:260px;height:260px;top:6%;right:10%;border-color:rgba(255,214,0,0.05)"></div>
+  <div class="g gl" style="width:180px;bottom:25%;left:3%;background:rgba(155,48,255,0.04);transform:rotate(18deg)"></div>
+  <div>
+    <div class="lbl" data-i18n="p3_lbl">03 — The Art of the Prompt</div>
+    <div class="ttl" data-i18n="p3_ttl">Better prompts.<br/>Better <em>results.</em></div>
+    <div class="bdy" data-i18n="p3_bdy">A prompt is your instruction to the AI. Use the formula: <strong>Task + Context + Format.</strong> Be specific, assign a role, set constraints, ask for alternatives, and iterate.</div>
+    <div class="ext">
+      <div class="msteps">
+        <div class="ms"><div class="ms-n">01</div><div class="ms-t"><h4 data-i18n="p3_s1h">Be specific</h4><p data-i18n="p3_s1p">"Write 3 tagline options for a premium organic juice brand" beats "Write a tagline."</p></div></div>
+        <div class="ms"><div class="ms-n">02</div><div class="ms-t"><h4 data-i18n="p3_s2h">Assign a role</h4><p data-i18n="p3_s2p">"You are a senior packaging design strategist…" gives the AI perspective.</p></div></div>
+        <div class="ms"><div class="ms-n">03</div><div class="ms-t"><h4 data-i18n="p3_s3h">Set constraints</h4><p data-i18n="p3_s3p">"Maximum 100 words" or "Use only simple language."</p></div></div>
+        <div class="ms"><div class="ms-n">04</div><div class="ms-t"><h4 data-i18n="p3_s4h">Ask for alternatives</h4><p data-i18n="p3_s4p">"Give me 3 different versions" — compare &amp; refine.</p></div></div>
+        <div class="ms"><div class="ms-n">05</div><div class="ms-t"><h4 data-i18n="p3_s5h">Iterate</h4><p data-i18n="p3_s5p">Follow up: "Make it shorter," "More formal tone," "Focus more on sustainability."</p></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 5 ── CORE FEATURES PT1 ── -->
+<div class="pg" id="p4">
+  <div class="g gc" style="top:14%;right:22%;color:rgba(255,214,0,0.06);font-size:50px">+</div>
+  <div class="g gr" style="width:180px;height:180px;bottom:18%;right:8%;border-color:rgba(155,48,255,0.05)"></div>
+  <div>
+    <div class="lbl" data-i18n="p4_lbl">04 — Core Features</div>
+    <div class="ttl" data-i18n="p4_ttl">Upload. Search.<br/><em>Connect.</em></div>
+    <div class="bdy" data-i18n="p4_bdy">Upload PDFs, Word, Excel, or images directly into a chat. Type <strong>@</strong> to access shared company knowledge folders. Enable <strong>Web Search</strong> for real-time online information.</div>
+    <div class="ext">
+      <div class="mcards" style="grid-template-columns:repeat(3,1fr)">
+        <div class="mc"><div class="mc-inner"><div class="mc-front"><i>📄</i><h4 data-i18n="p4_c1h">File Upload</h4></div><div class="mc-back"><h4 data-i18n="p4_c1h">File Upload</h4><p data-i18n="p4_c1p">Summarize, extract, translate, or Q&A on uploaded files.</p></div></div></div>
+        <div class="mc"><div class="mc-inner"><div class="mc-front"><i>@</i><h4 data-i18n="p4_c2h">Company Knowledge</h4></div><div class="mc-back"><h4 data-i18n="p4_c2h">Company Knowledge</h4><p data-i18n="p4_c2p">Type @ to access WIN CI docs, guidelines &amp; resources.</p></div></div></div>
+        <div class="mc"><div class="mc-inner"><div class="mc-front"><i>🔍</i><h4 data-i18n="p4_c3h">Web Search</h4></div><div class="mc-back"><h4 data-i18n="p4_c3h">Web Search</h4><p data-i18n="p4_c3p">Toggle web search for market research &amp; trend scouting.</p></div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 6 ── CORE FEATURES PT2 ── -->
+<div class="pg" id="p5">
+  <div class="g gr" style="width:320px;height:320px;top:-4%;right:-6%;border-color:rgba(155,48,255,0.05)"></div>
+  <div class="g gc" style="bottom:20%;left:8%;color:rgba(255,214,0,0.05);font-size:40px">+</div>
+  <div>
+    <div class="lbl" data-i18n="p5_lbl">05 — Advanced Features</div>
+    <div class="ttl" data-i18n="p5_ttl">Research. Create.<br/><em>Collaborate.</em></div>
+    <div class="bdy" data-i18n="p5_bdy"><strong>Deep Research</strong> delivers multi-step reports with sources. <strong>Canvas</strong> opens a side-by-side editing space. <strong>Data Analyst</strong> processes CSV/Excel files. <strong>Projects</strong> group related chats, files, and prompts in one place.</div>
+    <div class="ext">
+      <div class="mcards">
+        <div class="mc"><div class="mc-inner"><div class="mc-front"><i>🔬</i><h4 data-i18n="p5_c1h">Deep Research</h4></div><div class="mc-back"><h4 data-i18n="p5_c1h">Deep Research</h4><p data-i18n="p5_c1p">Extended multi-step online research with sources.</p></div></div></div>
+        <div class="mc"><div class="mc-inner"><div class="mc-front"><i>✏️</i><h4>Canvas</h4></div><div class="mc-back"><h4>Canvas</h4><p data-i18n="p5_c2p">Co-edit text with AI in real time, side by side.</p></div></div></div>
+        <div class="mc"><div class="mc-inner"><div class="mc-front"><i>📊</i><h4 data-i18n="p5_c3h">Data Analyst</h4></div><div class="mc-back"><h4 data-i18n="p5_c3h">Data Analyst</h4><p data-i18n="p5_c3p">Analyze data, create charts, identify patterns.</p></div></div></div>
+        <div class="mc"><div class="mc-inner"><div class="mc-front"><i>📁</i><h4 data-i18n="p5_c4h">Projects</h4></div><div class="mc-back"><h4 data-i18n="p5_c4h">Projects</h4><p data-i18n="p5_c4p">Organize chats, files &amp; prompts. Share with your team.</p></div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 7 ── USE CASES ── -->
+<div class="pg" id="p6">
+  <div class="g gl" style="width:200px;top:30%;right:5%;background:rgba(255,214,0,0.03);transform:rotate(-20deg)"></div>
+  <div>
+    <div class="lbl" data-i18n="p6_lbl">06 — Use Cases by Department</div>
+    <div class="ttl" data-i18n="p6_ttl">AI for<br/><em>every</em> team.</div>
+    <div class="bdy" data-i18n="p6_bdy">From design concept brainstorms to financial analysis — every department benefits. Here are examples tailored to <strong>your role.</strong></div>
+    <div class="ext">
+      <div class="mcards" style="grid-template-columns:repeat(3,1fr)">
+        <div class="mc"><div class="mc-inner"><div class="mc-front"><i>🎨</i><h4 data-i18n="p6_c1h">Creative &amp; Production</h4></div><div class="mc-back"><h4 data-i18n="p6_c1h">Creative &amp; Production</h4><p data-i18n="p6_c1p">Design concepts, packaging copy, presentation text, retouching briefs.</p></div></div></div>
+        <div class="mc"><div class="mc-inner"><div class="mc-front"><i>🤝</i><h4 data-i18n="p6_c2h">Client-Facing</h4></div><div class="mc-back"><h4 data-i18n="p6_c2h">Client-Facing</h4><p data-i18n="p6_c2p">Meeting summaries, briefing analysis, pitch prep, status reports.</p></div></div></div>
+        <div class="mc"><div class="mc-inner"><div class="mc-front"><i>⚙️</i><h4 data-i18n="p6_c3h">Operations &amp; Support</h4></div><div class="mc-back"><h4 data-i18n="p6_c3h">Operations &amp; Support</h4><p data-i18n="p6_c3p">Job postings, email drafts, process docs, expense analysis.</p></div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 8 ── CUSTOM INSTRUCTIONS ── -->
+<div class="pg" id="p7">
+  <div class="g gr" style="width:200px;height:200px;bottom:15%;left:4%;border-color:rgba(255,214,0,0.04)"></div>
+  <div class="g gc" style="top:12%;right:15%;color:rgba(155,48,255,0.05);font-size:70px">+</div>
+  <div>
+    <div class="lbl" data-i18n="p7_lbl">07 — Custom Instructions</div>
+    <div class="ttl" data-i18n="p7_ttl">Set it once.<br/><em>Never</em> repeat.</div>
+    <div class="bdy" data-i18n="p7_bdy">Custom Instructions tell Langdock about you permanently — no need to repeat context in every chat. Go to your <strong>profile settings</strong> and fill in your role, department, language, and preferences.</div>
+    <div class="ext">
+      <div class="codeblock" style="font-size:12px;line-height:1.9;max-width:520px" data-i18n="p7_code">
+        I work at <span class="vr">WIN CI</span>, a packaging design agency in Berlin specializing in FMCG.<br/>
+        My department is <span class="vr">{{ your department }}</span>. My role is <span class="vr">{{ your role }}</span>.<br/>
+        I primarily work in <span class="vr">{{ language }}</span>.<br/>
+        Keep responses practical and concise.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 9 ── CHEAT SHEET + HELP ── -->
+<div class="pg" id="p8">
+  <div class="g gr" style="width:280px;height:280px;top:5%;right:3%;border-color:rgba(155,48,255,0.04)"></div>
+  <div>
+    <div class="lbl" data-i18n="p8_lbl">08 — Quick Reference</div>
+    <div class="ttl" data-i18n="p8_ttl">Your<br/><em>cheat sheet.</em></div>
+    <div class="bdy" data-i18n="p8_bdy">
+      <strong>New Chat:</strong> Click "New Chat" top-left.<br/>
+      <strong>Model Switch:</strong> Dropdown at top of chat.<br/>
+      <strong>@ Mention:</strong> Type @ to access knowledge folders.<br/>
+      <strong>File Upload:</strong> Drag &amp; drop or click attachment icon.<br/>
+      <strong>Web Search:</strong> Toggle the web search icon before prompting.<br/><br/>
+      <strong>Need help?</strong> IT Support for technical issues · AI Unit for strategy · AI Specialist for prompt help · Head of Digital for policy questions.
+    </div>
+  </div>
+</div>
+
+<!-- 10 ── FINALE ── -->
+<div class="pg pg-final" id="p9">
+  <div>
+    <div class="lbl" data-i18n="p9_lbl">You are the expert</div>
+    <div class="ttl" data-i18n="p9_ttl">Enjoy the best outcomes <br/>within speed.</div>
+    <div class="sub" data-i18n="p9_sub">AI is a tool. The best results come from combining your professional knowledge with AI's speed. Share what works with your team.<br/>WIN Creating Images GmbH </div>
+  </div>
+</div>
+
+</div><!-- #app -->
+
+<!-- ══════ PARTICLE CANVAS ══════ -->
+<canvas id="ptc" style="position:fixed;inset:0;z-index:1;pointer-events:none"></canvas>
+
+<script>
+(function(){
+  // ── State ──
+  const pages = document.querySelectorAll('.pg');
+  const total = pages.length;
+  let cur = 0;
+  let busy = false;
+  let live = false;
+
+  // ── Dots ──
+  const dotsEl = document.getElementById('dots');
+  for(let i=0;i<total;i++){
+    const d = document.createElement('button');
+    d.className = 'ui-dot' + (i===0?' on':'');
+    d.onclick = ()=> go(i);
+    dotsEl.appendChild(d);
+  }
+
+  // ── Go to page ──
+  function go(idx){
+    if(busy || idx===cur || idx<0 || idx>=total) return;
+    busy = true;
+
+    const dir = idx > cur ? 'left' : 'right';
+    const old = pages[cur];
+    const nxt = pages[idx];
+
+    // Remove all transition classes first
+    pages.forEach(p => {
+      if(p !== old && p !== nxt){
+        p.classList.remove('active','exit-left','exit-right');
+        p.style.transition = 'none';
+      }
+    });
+
+    // Exit old page
+    old.classList.remove('active');
+    old.classList.add(dir === 'left' ? 'exit-left' : 'exit-right');
+
+    // Prepare new page entry direction
+    nxt.style.transition = 'none';
+    nxt.classList.remove('exit-left','exit-right','active');
+    nxt.style.transform = dir === 'left' 
+      ? 'rotateY(180deg) scale(0.8)' 
+      : 'rotateY(-180deg) scale(0.8)';
+    nxt.style.opacity = '0';
+
+    // Force reflow
+    void nxt.offsetWidth;
+
+    // Animate in
+    nxt.style.transition = '';
+    nxt.classList.add('active');
+    nxt.style.transform = '';
+    nxt.style.opacity = '';
+
+    cur = idx;
+    updateUI();
+
+    setTimeout(()=>{
+      old.classList.remove('exit-left','exit-right');
+      old.style.transition = '';
+      busy = false;
+    }, 1100);
+  }
+
+  function updateUI(){
+    document.getElementById('ctr').innerHTML = '<b>'+(cur+1)+'</b> / '+total;
+    document.querySelectorAll('.ui-dot').forEach((d,i)=>{
+      d.classList.toggle('on', i===cur);
+    });
+    document.getElementById('scrl').style.opacity = cur===total-1 ? '0':'1';
+  }
+
+  // ── Input: Wheel ──
+  let wt;
+  window.addEventListener('wheel', e=>{
+    if(!live) return;
+    e.preventDefault();
+    clearTimeout(wt);
+    wt = setTimeout(()=>{
+      if(e.deltaY > 0) go(cur+1);
+      else go(cur-1);
+    }, 80);
+  }, {passive:false});
+
+  // ── Input: Keys ──
+  window.addEventListener('keydown', e=>{
+    if(!live) return;
+    if(['ArrowDown','ArrowRight',' '].includes(e.key)){e.preventDefault();go(cur+1)}
+    if(['ArrowUp','ArrowLeft'].includes(e.key)){e.preventDefault();go(cur-1)}
+  });
+
+  // ── Input: Touch ──
+  let ty=0;
+  window.addEventListener('touchstart',e=>{ty=e.touches[0].clientY},{passive:true});
+  window.addEventListener('touchend',e=>{
+    if(!live) return;
+    const d = ty - e.changedTouches[0].clientY;
+    if(Math.abs(d)>50){ d>0 ? go(cur+1) : go(cur-1) }
+  },{passive:true});
+
+  // ── Enter ──
+  document.getElementById('enterBtn').addEventListener('click', ()=>{
+    document.getElementById('intro').classList.add('gone');
+    live = true;
+    pages[0].classList.add('active');
+    initParticles();
+  });
+
+  // ── Particles ──
+  function initParticles(){
+    const c = document.getElementById('ptc');
+    const x = c.getContext('2d');
+    let w, h;
+    const ps = [];
+
+    function resize(){ w=c.width=innerWidth; h=c.height=innerHeight }
+    resize();
+    addEventListener('resize', resize);
+
+    class P{
+      constructor(){ this.r() }
+      r(){
+        this.x=Math.random()*w;
+        this.y=h+Math.random()*50;
+        this.s=Math.random()*1.8+0.4;
+        this.vy=-(Math.random()*0.35+0.08);
+        this.vx=(Math.random()-0.5)*0.2;
+        this.o=Math.random()*0.25+0.03;
+        this.c=Math.random()>0.5?'#FFD600':'#9B30FF';
+      }
+      u(){ this.y+=this.vy; this.x+=this.vx; if(this.y<-10)this.r() }
+      d(){
+        x.beginPath();
+        x.arc(this.x,this.y,this.s,0,Math.PI*2);
+        x.fillStyle=this.c;
+        x.globalAlpha=this.o;
+        x.fill();
+      }
+    }
+
+    for(let i=0;i<35;i++){const p=new P();p.y=Math.random()*h;ps.push(p)}
+
+    (function loop(){
+      x.clearRect(0,0,w,h);
+      ps.forEach(p=>{p.u();p.d()});
+      x.globalAlpha=1;
+      requestAnimationFrame(loop);
+    })();
+  }
+
+  // ── i18n ──
+  const T = {
+    en: {
+      intro_tag:'⚡ Experimental Interface',
+      intro_title:'Welcome to<br/>WIN CI<em>AI<br/>Operating System.</em>',
+      intro_desc:'This handbook uses 360° page transitions. Scroll or use arrow keys to navigate between sections.',
+      intro_btn:'Initialize System',
+      scroll_hint:'Scroll to navigate',
+      p0_lbl:'Introduction', p0_ttl:'AI at<br/><em>WIN CI.</em>',
+      p0_bdy:'<strong>Langdock</strong> is our official AI platform. It helps you brainstorm faster, process information more efficiently, and focus more time on <strong>creative work.</strong> This handbook is for every WIN CI employee with a Member account — no technical background required.',
+      p0_m1:'Platform<b>Langdock Enterprise</b>', p0_m2:'Compliance<b>GDPR · EU-hosted</b>', p0_m3:'For<b>Every WIN CI Member</b>',
+      p1_lbl:'01 — What is Langdock?', p1_ttl:'One workspace.<br/>Every <em>model.</em>',
+      p1_bdy:'A secure, GDPR-compliant AI platform giving you access to <strong>multiple LLMs</strong> in one place. Your data stays protected, hosted in Europe, and is <strong>never used for AI training.</strong> No personal accounts needed.',
+      p1_c1:'Best all-rounder. Writing, brainstorming, translation.',
+      p1_c2:'Long-form, nuanced text & detailed analysis.',
+      p1_c3:'Data-heavy, multilingual & very long docs.',
+      p1_c4:'Quick simple questions. Faster & lighter.',
+      p2_lbl:'02 — Getting Started', p2_ttl:'Up &amp; running<br/>in <em>60 seconds.</em>',
+      p2_bdy:'Click the link from Head of Digital, open a new chat, choose a model, and start prompting. <strong>That\'s it — you\'re using AI.</strong>',
+      p2_s1h:'Access workspace', p2_s1p:'Click the link in the email from Head of Digital.',
+      p2_s2h:'Start a chat', p2_s2p:'Click "New Chat" top-left. Type your prompt at the bottom.',
+      p2_s3h:'Choose a model', p2_s3p:'Pick from the dropdown. Start with GPT-4o if unsure.',
+      p2_s4h:'Prompt & go', p2_s4p:'Type your first prompt and press Enter.',
+      p3_lbl:'03 — The Art of the Prompt', p3_ttl:'Better prompts.<br/>Better <em>results.</em>',
+      p3_bdy:'A prompt is your instruction to the AI. Use the formula: <strong>Task + Context + Format.</strong> Be specific, assign a role, set constraints, ask for alternatives, and iterate.',
+      p3_s1h:'Be specific', p3_s1p:'"Write 3 tagline options for a premium organic juice brand" beats "Write a tagline."',
+      p3_s2h:'Assign a role', p3_s2p:'"You are a senior packaging design strategist…" gives the AI perspective.',
+      p3_s3h:'Set constraints', p3_s3p:'"Maximum 100 words" or "Use only simple language."',
+      p3_s4h:'Ask for alternatives', p3_s4p:'"Give me 3 different versions" — compare & refine.',
+      p3_s5h:'Iterate', p3_s5p:'Follow up: "Make it shorter," "More formal tone," "Focus more on sustainability."',
+      p4_lbl:'04 — Core Features', p4_ttl:'Upload. Search.<br/><em>Connect.</em>',
+      p4_bdy:'Upload PDFs, Word, Excel, or images directly into a chat. Type <strong>@</strong> to access shared company knowledge folders. Enable <strong>Web Search</strong> for real-time online information.',
+      p4_c1h:'File Upload', p4_c1p:'Summarize, extract, translate, or Q&A on uploaded files.',
+      p4_c2h:'Company Knowledge', p4_c2p:'Type @ to access WIN CI docs, guidelines & resources.',
+      p4_c3h:'Web Search', p4_c3p:'Toggle web search for market research & trend scouting.',
+      p5_lbl:'05 — Advanced Features', p5_ttl:'Research. Create.<br/><em>Collaborate.</em>',
+      p5_bdy:'<strong>Deep Research</strong> delivers multi-step reports with sources. <strong>Canvas</strong> opens a side-by-side editing space. <strong>Data Analyst</strong> processes CSV/Excel files. <strong>Projects</strong> group related chats, files, and prompts in one place.',
+      p5_c1h:'Deep Research', p5_c1p:'Extended multi-step online research with sources.',
+      p5_c2p:'Co-edit text with AI in real time, side by side.',
+      p5_c3h:'Data Analyst', p5_c3p:'Analyze data, create charts, identify patterns.',
+      p5_c4h:'Projects', p5_c4p:'Organize chats, files & prompts. Share with your team.',
+      p6_lbl:'06 — Use Cases by Department', p6_ttl:'AI for<br/><em>every</em> team.',
+      p6_bdy:'From design concept brainstorms to financial analysis — every department benefits. Here are examples tailored to <strong>your role.</strong>',
+      p6_c1h:'Creative & Production', p6_c1p:'Design concepts, packaging copy, presentation text, retouching briefs.',
+      p6_c2h:'Client-Facing', p6_c2p:'Meeting summaries, briefing analysis, pitch prep, status reports.',
+      p6_c3h:'Operations & Support', p6_c3p:'Job postings, email drafts, process docs, expense analysis.',
+      p7_lbl:'07 — Custom Instructions', p7_ttl:'Set it once.<br/><em>Never</em> repeat.',
+      p7_bdy:'Custom Instructions tell Langdock about you permanently — no need to repeat context in every chat. Go to your <strong>profile settings</strong> and fill in your role, department, language, and preferences.',
+      p7_code:'I work at <span class="vr">WIN CI</span>, a packaging design agency in Berlin specializing in FMCG.<br/>My department is <span class="vr">{{ your department }}</span>. My role is <span class="vr">{{ your role }}</span>.<br/>I primarily work in <span class="vr">{{ language }}</span>.<br/>Keep responses practical and concise.',
+      p8_lbl:'08 — Quick Reference', p8_ttl:'Your<br/><em>cheat sheet.</em>',
+      p8_bdy:'<strong>New Chat:</strong> Click "New Chat" top-left.<br/><strong>Model Switch:</strong> Dropdown at top of chat.<br/><strong>@ Mention:</strong> Type @ to access knowledge folders.<br/><strong>File Upload:</strong> Drag & drop or click attachment icon.<br/><strong>Web Search:</strong> Toggle the web search icon before prompting.<br/><br/><strong>Need help?</strong> IT Support for technical issues · AI Unit for strategy · AI Specialist for prompt help · Head of Digital for policy questions.',
+      p9_lbl:'You are the expert', p9_ttl:'Enjoy the best outcomes <br/>within speed.',
+      p9_sub:'AI is a tool. The best results come from combining your professional knowledge with AI\'s speed. Share what works with your team.<br/>WIN Creating Images GmbH',
+    },
+    de: {
+      intro_tag:'⚡ Experimentelles Interface',
+      intro_title:'Willkommen bei<br/>WIN CI<em>AI<br/>Operating System.</em>',
+      intro_desc:'Dieses Handbuch verwendet 360°-Seitenübergänge. Scrolle oder nutze die Pfeiltasten zur Navigation.',
+      intro_btn:'System starten',
+      scroll_hint:'Scrollen zum Navigieren',
+      p0_lbl:'Einführung', p0_ttl:'AI bei<br/><em>WIN CI.</em>',
+      p0_bdy:'<strong>Langdock</strong> ist unsere offizielle AI-Plattform. Sie hilft dir, schneller zu brainstormen, Informationen effizienter zu verarbeiten und mehr Zeit für <strong>kreative Arbeit</strong> zu haben. Dieses Handbuch ist für alle WIN CI-Mitarbeitenden mit Member-Account — keine technischen Vorkenntnisse nötig.',
+      p0_m1:'Plattform<b>Langdock Enterprise</b>', p0_m2:'Konformität<b>DSGVO · EU-gehostet</b>', p0_m3:'Für<b>Alle WIN CI Mitglieder</b>',
+      p1_lbl:'01 — Was ist Langdock?', p1_ttl:'Ein Workspace.<br/>Jedes <em>Modell.</em>',
+      p1_bdy:'Eine sichere, DSGVO-konforme AI-Plattform mit Zugriff auf <strong>mehrere LLMs</strong> an einem Ort. Deine Daten bleiben geschützt, in Europa gehostet, und werden <strong>nie für AI-Training verwendet.</strong> Keine persönlichen Accounts nötig.',
+      p1_c1:'Allrounder. Schreiben, Brainstorming, Übersetzung.',
+      p1_c2:'Lange, nuancierte Texte & detaillierte Analyse.',
+      p1_c3:'Datenintensiv, mehrsprachig & sehr lange Dokumente.',
+      p1_c4:'Schnelle einfache Fragen. Schneller & leichter.',
+      p2_lbl:'02 — Erste Schritte', p2_ttl:'Startklar<br/>in <em>60 Sekunden.</em>',
+      p2_bdy:'Klicke auf den Link vom Head of Digital, öffne einen neuen Chat, wähle ein Modell und starte mit deinem Prompt. <strong>Das war\'s — du nutzt AI!</strong>',
+      p2_s1h:'Workspace öffnen', p2_s1p:'Klicke auf den Link in der E-Mail vom Head of Digital.',
+      p2_s2h:'Chat starten', p2_s2p:'Klicke oben links auf „Neuer Chat". Gib deinen Prompt unten ein.',
+      p2_s3h:'Modell wählen', p2_s3p:'Wähle aus dem Dropdown. Starte mit GPT-4o, wenn du unsicher bist.',
+      p2_s4h:'Prompt & los', p2_s4p:'Gib deinen ersten Prompt ein und drücke Enter.',
+      p3_lbl:'03 — Die Kunst des Prompts', p3_ttl:'Bessere Prompts.<br/>Bessere <em>Ergebnisse.</em>',
+      p3_bdy:'Ein Prompt ist deine Anweisung an die AI. Nutze die Formel: <strong>Aufgabe + Kontext + Format.</strong> Sei spezifisch, vergib eine Rolle, setze Grenzen, frage nach Alternativen und iteriere.',
+      p3_s1h:'Sei spezifisch', p3_s1p:'„Schreibe 3 Tagline-Optionen für eine Premium-Bio-Saftmarke" schlägt „Schreibe eine Tagline."',
+      p3_s2h:'Rolle zuweisen', p3_s2p:'„Du bist ein Senior Packaging Design Stratege…" gibt der AI Perspektive.',
+      p3_s3h:'Grenzen setzen', p3_s3p:'„Maximal 100 Wörter" oder „Verwende nur einfache Sprache."',
+      p3_s4h:'Alternativen fordern', p3_s4p:'„Gib mir 3 verschiedene Versionen" — vergleichen & verfeinern.',
+      p3_s5h:'Iterieren', p3_s5p:'Nachfassen: „Kürzer bitte", „Formellerer Ton", „Mehr Fokus auf Nachhaltigkeit."',
+      p4_lbl:'04 — Kernfunktionen', p4_ttl:'Hochladen. Suchen.<br/><em>Verbinden.</em>',
+      p4_bdy:'Lade PDFs, Word, Excel oder Bilder direkt in einen Chat hoch. Tippe <strong>@</strong>, um auf gemeinsame Wissensdatenbanken zuzugreifen. Aktiviere die <strong>Websuche</strong> für aktuelle Online-Informationen.',
+      p4_c1h:'Datei-Upload', p4_c1p:'Zusammenfassen, extrahieren, übersetzen oder Q&A zu hochgeladenen Dateien.',
+      p4_c2h:'Firmenwissen', p4_c2p:'Tippe @ für Zugriff auf WIN CI Dokumente, Richtlinien & Ressourcen.',
+      p4_c3h:'Websuche', p4_c3p:'Websuche aktivieren für Marktforschung & Trendbeobachtung.',
+      p5_lbl:'05 — Erweiterte Funktionen', p5_ttl:'Recherche. Erstellen.<br/><em>Zusammenarbeiten.</em>',
+      p5_bdy:'<strong>Deep Research</strong> liefert mehrstufige Berichte mit Quellen. <strong>Canvas</strong> öffnet einen Editor zum gemeinsamen Bearbeiten. <strong>Datenanalyst</strong> verarbeitet CSV/Excel-Dateien. <strong>Projekte</strong> bündeln Chats, Dateien und Prompts an einem Ort.',
+      p5_c1h:'Deep Research', p5_c1p:'Erweiterte mehrstufige Online-Recherche mit Quellen.',
+      p5_c2p:'Text gemeinsam mit der AI in Echtzeit bearbeiten.',
+      p5_c3h:'Datenanalyst', p5_c3p:'Daten analysieren, Diagramme erstellen, Muster erkennen.',
+      p5_c4h:'Projekte', p5_c4p:'Chats, Dateien & Prompts organisieren. Mit dem Team teilen.',
+      p6_lbl:'06 — Anwendungsfälle nach Abteilung', p6_ttl:'AI für<br/><em>jedes</em> Team.',
+      p6_bdy:'Von Design-Konzept-Brainstorms bis zur Finanzanalyse — jede Abteilung profitiert. Hier sind Beispiele für <strong>deine Rolle.</strong>',
+      p6_c1h:'Kreation & Produktion', p6_c1p:'Designkonzepte, Verpackungstexte, Präsentationstexte, Retusche-Briefings.',
+      p6_c2h:'Kundenbetreuung', p6_c2p:'Meeting-Zusammenfassungen, Briefing-Analysen, Pitch-Vorbereitung, Statusberichte.',
+      p6_c3h:'Operations & Support', p6_c3p:'Stellenanzeigen, E-Mail-Entwürfe, Prozessdokumentation, Kostenanalyse.',
+      p7_lbl:'07 — Benutzerdefinierte Anweisungen', p7_ttl:'Einmal einstellen.<br/><em>Nie</em> wiederholen.',
+      p7_bdy:'Benutzerdefinierte Anweisungen informieren Langdock dauerhaft über dich — kein Kontext-Wiederholen in jedem Chat nötig. Gehe zu deinen <strong>Profileinstellungen</strong> und trage Rolle, Abteilung, Sprache und Präferenzen ein.',
+      p7_code:'Ich arbeite bei <span class="vr">WIN CI</span>, einer Verpackungsdesign-Agentur in Berlin mit Fokus auf FMCG.<br/>Meine Abteilung ist <span class="vr">{{ deine Abteilung }}</span>. Meine Rolle ist <span class="vr">{{ deine Rolle }}</span>.<br/>Ich arbeite hauptsächlich auf <span class="vr">{{ Sprache }}</span>.<br/>Halte Antworten praktisch und prägnant.',
+      p8_lbl:'08 — Kurzübersicht', p8_ttl:'Dein<br/><em>Spickzettel.</em>',
+      p8_bdy:'<strong>Neuer Chat:</strong> Klicke oben links auf „Neuer Chat".<br/><strong>Modellwechsel:</strong> Dropdown oben im Chat.<br/><strong>@ Erwähnung:</strong> Tippe @ für Zugriff auf Wissensordner.<br/><strong>Datei-Upload:</strong> Drag & Drop oder Anhang-Symbol klicken.<br/><strong>Websuche:</strong> Websuche-Symbol vor dem Prompt aktivieren.<br/><br/><strong>Hilfe nötig?</strong> IT-Support bei technischen Problemen · AI Unit für Strategie · AI Specialist für Prompt-Hilfe · Head of Digital für Policy-Fragen.',
+      p9_lbl:'Du bist der Experte', p9_ttl:'Genieße die besten Ergebnisse<br/>mit Geschwindigkeit.',
+      p9_sub:'AI ist ein Werkzeug. Die besten Ergebnisse entstehen, wenn du dein Fachwissen mit der Geschwindigkeit der AI kombinierst. Teile, was funktioniert, mit deinem Team.<br/>WIN Creating Images GmbH',
+    }
+  };
+
+  let lang = 'en';
+  function setLang(l){
+    lang = l;
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if(T[l][key] !== undefined) el.innerHTML = T[l][key];
+    });
+    document.querySelectorAll('#langSw button').forEach(b => {
+      b.classList.toggle('on', b.dataset.lang === l);
+    });
+  }
+  document.getElementById('langSw').addEventListener('click', e => {
+    if(e.target.dataset.lang) setLang(e.target.dataset.lang);
+  });
+
+})();
+</script>
+</body>
+</html>
