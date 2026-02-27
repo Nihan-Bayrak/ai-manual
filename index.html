@@ -4,11 +4,16 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>WIN CI — AI Operating System</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+@font-face{font-family:'Diatype';src:url('ABCDiatype-Regular.woff2') format('woff2');font-weight:400;font-style:normal}
+@font-face{font-family:'Diatype';src:url('ABCDiatype-Medium.woff2') format('woff2');font-weight:500;font-style:normal}
+@font-face{font-family:'Diatype';src:url('ABCDiatype-Bold.woff2') format('woff2'),url('ABCDiatype-Bold.woff') format('woff');font-weight:700 800;font-style:normal}
+@font-face{font-family:'DiatypeMono';src:url('ABCDiatypeMono-Regular.woff2') format('woff2');font-weight:400;font-style:normal}
+</style>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--y:#FFD600;--p:#9B30FF;--bg:#09090B;--w:#EDEDE9;--m:#555;--d:#1a1a1a}
-html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--w);font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--w);font-family:'Diatype',sans-serif;-webkit-font-smoothing:antialiased}
 ::selection{background:var(--y);color:var(--bg)}
 
 /* ══════ WRAPPER ══════ */
@@ -175,7 +180,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--w);font-f
 
 /* ══════ CODE BLOCK ══════ */
 .codeblock{
-  font-family:'DM Mono',monospace;font-size:15px;
+  font-family:'DiatypeMono',monospace;font-size:15px;
   color:var(--w);background:rgba(255,214,0,0.04);
   padding:12px 20px;border:1px solid rgba(255,214,0,0.1);
   border-radius:4px;display:inline-block;margin:12px 0;line-height:1.8;
@@ -225,7 +230,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--w);font-f
 <div id="intro">
   <div class="tag" data-i18n="intro_tag">⚡ Experimental Interface</div>
   <h1 data-i18n="intro_title">Welcome to<br/>WIN CI<em>AI<br/>Operating System.</em></h1>
-  <p data-i18n="intro_desc">This handbook uses 360° page transitions. Scroll or use arrow keys to navigate between sections.</p>
   <button id="enterBtn" data-i18n="intro_btn">Initialize System</button>
 </div>
 
@@ -344,7 +348,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--w);font-f
     <div class="bdy" data-i18n="p5_bdy"><strong>Deep Research</strong> delivers multi-step reports with sources. <strong>Canvas</strong> opens a side-by-side editing space. <strong>Data Analyst</strong> processes CSV/Excel files. <strong>Projects</strong> group related chats, files, and prompts in one place.</div>
     <div class="ext">
       <div class="mcards">
-        <div class="mc"><div class="mc-inner"><div class="mc-front"><i>🔬</i><h4 data-i18n="p5_c1h">Deep Research</h4></div><div class="mc-back"><h4 data-i18n="p5_c1h">Deep Research</h4><p data-i18n="p5_c1p">Extended multi-step online research with sources.</p></div></div></div>
+        <div class="mc"><div class="mc-inner"><div class="mc-front"><i>🖼️</i><h4 data-i18n="p5_c1h">Image Generation</h4></div><div class="mc-back"><h4 data-i18n="p5_c1h">Image Generation</h4><p data-i18n="p5_c1p">Image Generation with different models.</p></div></div></div>
         <div class="mc"><div class="mc-inner"><div class="mc-front"><i>✏️</i><h4>Canvas</h4></div><div class="mc-back"><h4>Canvas</h4><p data-i18n="p5_c2p">Co-edit text with AI in real time, side by side.</p></div></div></div>
         <div class="mc"><div class="mc-inner"><div class="mc-front"><i>📊</i><h4 data-i18n="p5_c3h">Data Analyst</h4></div><div class="mc-back"><h4 data-i18n="p5_c3h">Data Analyst</h4><p data-i18n="p5_c3p">Analyze data, create charts, identify patterns.</p></div></div></div>
         <div class="mc"><div class="mc-inner"><div class="mc-front"><i>📁</i><h4 data-i18n="p5_c4h">Projects</h4></div><div class="mc-back"><h4 data-i18n="p5_c4h">Projects</h4><p data-i18n="p5_c4p">Organize chats, files &amp; prompts. Share with your team.</p></div></div></div>
